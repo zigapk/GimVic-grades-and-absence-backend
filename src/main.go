@@ -1,57 +1,79 @@
 package main
 
 import (
-    "fmt"
-    "net/http"
-    "database/sql"
-    "net/url"
-    _ "github.com/go-sql-driver/mysql"
-    "encoding/json"
+	"database/sql"
+	"encoding/json"
+	"fmt"
+	_ "github.com/go-sql-driver/mysql"
+	"net/http"
+	"net/url"
 )
+ //TODO: translate sql
 
 var sqlString string = "root:root@/soc"
 
 func handler(w http.ResponseWriter, r *http.Request) {
-    queries := parseUrl(r)
-    
-    var where string = ""
-    var i int = 0
-    for name, values := range queries {
-    	if i != 0 {
-    		where += " and "
-    	}
-    	where += name + "=" + values[0]
-    	i++
-    }
-    var optionalAnd string = ""
-    if where != "" {optionalAnd = " and "}
+	queries := parseUrl(r)
+	where := generateWhere(queries)
+	//var gradeType string = queries["gradeType"][0]
 
-    response := &Response {
-    	Facts: Facts {
-    		AllStudents: numberOf("gender", ""),
-    		CurrentStudents: numberOf("gender", where),
-    		AllMale: numberOf("gender", "gender = 'M'"),
-    		CurrentMale: numberOf("gender", where + optionalAnd + "gender = 'M'"),
-    		AllFemale: numberOf("gender", "gender = 'Z'"),
-    		CurrentFemale: numberOf("gender", where + optionalAnd + "gender = 'Z'"),
-    	},
-    }
-    responseStr, err := json.Marshal(response)
-    check(err)
-    fmt.Fprint(w, string(responseStr))
+	var optionalAnd string = ""
+	if where != "" {
+		optionalAnd = " and "
+	}
+
+	response := &Response{
+		Facts: Facts{
+			AllStudents:     numberOf("gender", ""),
+			CurrentStudents: numberOf("gender", where),
+			AllMale:         numberOf("gender", "gender = 'M'"),
+			CurrentMale:     numberOf("gender", where+optionalAnd+"gender = 'M'"),
+			AllFemale:       numberOf("gender", "gender = 'Z'"),
+			CurrentFemale:   numberOf("gender", where+optionalAnd+"gender = 'Z'"),
+		},
+	}
+	responseStr, err := json.Marshal(response)
+	check(err)
+	fmt.Fprint(w, string(responseStr))
 }
- func parseUrl(r *http.Request) map[string][]string{
- 	str := r.URL.String()
-    u, err := url.Parse(str)
-    check(err)
-    m, err := url.ParseQuery(u.RawQuery)
-    check(err)
-    return m
- }
+
+func generateWhere(queries map[string][]string) string {
+	//years not included yet
+	var where string = ""
+
+	//for grades - default is true
+	if queries["grade1"] != nil && queries["grade1"][0] == "false"{
+		if where != "" {where += " and "}
+		where += "class != 1"
+	}
+	if queries["grade2"] != nil && queries["grade2"][0] == "false" {
+		if where != "" {where += " and "}
+		where += "class != 2"
+	}
+	if queries["grade3"] != nil && queries["grade3"][0] == "false" {
+		if where != "" {where += " and "}
+		where += "class != 3"
+	}
+	if queries["grade3"] != nil && queries["grade4"][0] == "false" {
+		if where != "" {where += " and "}
+		where += "class != 4"
+	}
+
+	return where
+}
+
+func parseUrl(r *http.Request) map[string][]string {
+	str := r.URL.String()
+	u, err := url.Parse(str)
+	check(err)
+	m, err := url.ParseQuery(u.RawQuery)
+	check(err)
+	return m
+}
 
 func main() {
-    http.HandleFunc("/", handler)
-    http.ListenAndServe(":8080", nil)
+	http.HandleFunc("/", handler)
+	http.ListenAndServe(":8080", nil)
 }
 
 func numberOf(what string, where string) int {
@@ -117,27 +139,25 @@ func check(err error) {
 	}
 }
 
-
 type Response struct {
-    Facts Facts
-    Stats Stats
+	Facts Facts
+	Stats Stats
 }
 
 type Facts struct {
-	AllStudents int
+	AllStudents     int
 	CurrentStudents int
-	AllMale int
-	CurrentMale int
-	AllFemale int
-	CurrentFemale int
-
+	AllMale         int
+	CurrentMale     int
+	AllFemale       int
+	CurrentFemale   int
 }
 
 type Stats struct {
-	AverageGrade float64
-	AverageAbsence float64
-	ExcusableAbsence float64
-	InexcusableAbsence float64
-	ExcusableStudents int
+	AverageGrade        float64
+	AverageAbsence      float64
+	ExcusableAbsence    float64
+	InexcusableAbsence  float64
+	ExcusableStudents   int
 	InexcusableStudents int
 }
