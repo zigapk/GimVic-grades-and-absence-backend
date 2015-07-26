@@ -41,7 +41,7 @@ func generateWhere(queries map[string][]string) string {
 	//years not included yet
 	var where string = ""
 
-	//for grades - default is true
+	//for grades (1., 2., 3., 4. grade) - default is true
 	if queries["grade1"] != nil && queries["grade1"][0] == "false"{
 		if where != "" {where += " and "}
 		where += "class != 1"
@@ -54,10 +54,28 @@ func generateWhere(queries map[string][]string) string {
 		if where != "" {where += " and "}
 		where += "class != 3"
 	}
-	if queries["grade3"] != nil && queries["grade4"][0] == "false" {
+	if queries["grade4"] != nil && queries["grade4"][0] == "false" {
 		if where != "" {where += " and "}
 		where += "class != 4"
 	}
+
+	//for classes (A, B, C, D, E, F) - default is true
+	/* SQL data not ready yet!
+	if queries["classA"] != nil && queries["classA"][0] == "false"{
+		if where != "" {where += " and "}
+		where += "class != 1"
+	}*/
+
+	//for gender (male, female) - default is true
+	if queries["male"] != nil && queries["male"][0] == "false" {
+		if where != "" {where += " and "}
+		where += "gender != 'M'"
+	}
+	if queries["female"] != nil && queries["female"][0] == "false" {
+		if where != "" {where += " and "}
+		where += "gender != 'Z'"
+	}
+
 
 	return where
 }
