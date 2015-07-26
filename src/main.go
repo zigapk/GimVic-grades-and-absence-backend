@@ -8,28 +8,44 @@ import (
 	"net/http"
 	"net/url"
 )
- //TODO: translate sql
+
+//TODO: translate sql
 
 var sqlString string = "root:root@/soc"
 
 func handler(w http.ResponseWriter, r *http.Request) {
 	queries := parseUrl(r)
 	where := generateWhere(queries)
-	//var gradeType string = queries["gradeType"][0]
+
+	var gradeType string = "average"
+	if queries["gradeType"] != nil {
+		gradeType = queries["gradeType"][0]
+	}
 
 	var optionalAnd string = ""
 	if where != "" {
 		optionalAnd = " and "
 	}
 
+	var tempExcusableAbsence float64 = average("opravicene", where)
+	var tempInexcusableAbsence float64 = average("neopravicene", where)
+
 	response := &Response{
 		Facts: Facts{
-			AllStudents:     numberOf("gender", ""),
-			CurrentStudents: numberOf("gender", where),
-			AllMale:         numberOf("gender", "gender = 'M'"),
-			CurrentMale:     numberOf("gender", where+optionalAnd+"gender = 'M'"),
-			AllFemale:       numberOf("gender", "gender = 'Z'"),
-			CurrentFemale:   numberOf("gender", where+optionalAnd+"gender = 'Z'"),
+			AllStudents:     numberOf("*", ""),
+			CurrentStudents: numberOf("*", where),
+			AllMale:         numberOf("*", "gender = 'M'"),
+			CurrentMale:     numberOf("*", where+optionalAnd+"gender = 'M'"),
+			AllFemale:       numberOf("*", "gender = 'Z'"),
+			CurrentFemale:   numberOf("*", where+optionalAnd+"gender = 'Z'"),
+		},
+		Stats: Stats{
+			AverageGrade:        average(gradeType, where),
+			ExcusableAbsence:    tempExcusableAbsence,
+			InexcusableAbsence:  tempInexcusableAbsence,
+			AverageAbsence:      tempExcusableAbsence + tempInexcusableAbsence,
+			ExcusableStudents:   numberOf("*", where+optionalAnd+"opravicene != 0"),
+			InexcusableStudents: numberOf("*", where+optionalAnd+"neopravicene != 0"),
 		},
 	}
 	responseStr, err := json.Marshal(response)
@@ -42,20 +58,28 @@ func generateWhere(queries map[string][]string) string {
 	var where string = ""
 
 	//for grades (1., 2., 3., 4. grade) - default is true
-	if queries["grade1"] != nil && queries["grade1"][0] == "false"{
-		if where != "" {where += " and "}
+	if queries["grade1"] != nil && queries["grade1"][0] == "false" {
+		if where != "" {
+			where += " and "
+		}
 		where += "class != 1"
 	}
 	if queries["grade2"] != nil && queries["grade2"][0] == "false" {
-		if where != "" {where += " and "}
+		if where != "" {
+			where += " and "
+		}
 		where += "class != 2"
 	}
 	if queries["grade3"] != nil && queries["grade3"][0] == "false" {
-		if where != "" {where += " and "}
+		if where != "" {
+			where += " and "
+		}
 		where += "class != 3"
 	}
 	if queries["grade4"] != nil && queries["grade4"][0] == "false" {
-		if where != "" {where += " and "}
+		if where != "" {
+			where += " and "
+		}
 		where += "class != 4"
 	}
 
@@ -68,14 +92,17 @@ func generateWhere(queries map[string][]string) string {
 
 	//for gender (male, female) - default is true
 	if queries["male"] != nil && queries["male"][0] == "false" {
-		if where != "" {where += " and "}
+		if where != "" {
+			where += " and "
+		}
 		where += "gender != 'M'"
 	}
 	if queries["female"] != nil && queries["female"][0] == "false" {
-		if where != "" {where += " and "}
+		if where != "" {
+			where += " and "
+		}
 		where += "gender != 'Z'"
 	}
-
 
 	return where
 }
