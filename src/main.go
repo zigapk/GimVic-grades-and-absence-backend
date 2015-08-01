@@ -9,7 +9,7 @@ import (
 	"net/url"
 )
 
-//TODO: translate sql
+var tableName string = "data"
 
 var sqlString string = "root:root@/soc"
 
@@ -27,25 +27,25 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		optionalAnd = " and "
 	}
 
-	var tempExcusableAbsence float64 = average("opravicene", where)
-	var tempInexcusableAbsence float64 = average("neopravicene", where)
+	var tempExcusableAbsence float64 = average("excusable", where)
+	var tempInexcusableAbsence float64 = average("inexcusable", where)
 
 	response := &Response{
 		Facts: Facts{
-			AllStudents:     numberOf("*", ""),
-			CurrentStudents: numberOf("*", where),
-			AllMale:         numberOf("*", "gender = 'M'"),
-			CurrentMale:     numberOf("*", where+optionalAnd+"gender = 'M'"),
-			AllFemale:       numberOf("*", "gender = 'Z'"),
-			CurrentFemale:   numberOf("*", where+optionalAnd+"gender = 'Z'"),
+			AllStudents:     numberOf(""),
+			CurrentStudents: numberOf(where),
+			AllMale:         numberOf("gender = 'M'"),
+			CurrentMale:     numberOf(where+optionalAnd+"gender = 'M'"),
+			AllFemale:       numberOf("gender = 'Z'"),
+			CurrentFemale:   numberOf(where+optionalAnd+"gender = 'Z'"),
 		},
 		Stats: Stats{
 			AverageGrade:        average(gradeType, where),
 			ExcusableAbsence:    tempExcusableAbsence,
 			InexcusableAbsence:  tempInexcusableAbsence,
 			AverageAbsence:      tempExcusableAbsence + tempInexcusableAbsence,
-			ExcusableStudents:   numberOf("*", where+optionalAnd+"opravicene != 0"),
-			InexcusableStudents: numberOf("*", where+optionalAnd+"neopravicene != 0"),
+			ExcusableStudents:   numberOf(where+optionalAnd+"excusable != 0"),
+			InexcusableStudents: numberOf(where+optionalAnd+"inexcusable != 0"),
 		},
 	}
 	responseStr, err := json.Marshal(response)
@@ -121,12 +121,12 @@ func main() {
 	http.ListenAndServe(":8080", nil)
 }
 
-func numberOf(what string, where string) int {
+func numberOf(where string) int {
 	var query string
 	if where == "" {
-		query = "select " + what + " from soc;"
+		query = "select * from " + tableName + ";"
 	} else {
-		query = "select " + what + " from soc where " + where + ";"
+		query = "select * from " + tableName + " where " + where + ";"
 	}
 
 	//debug
@@ -149,9 +149,9 @@ func numberOf(what string, where string) int {
 func average(what, where string) float64 {
 	var query string
 	if where == "" {
-		query = "select " + what + " from soc;"
+		query = "select " + what + " from " + tableName + ";"
 	} else {
-		query = "select " + what + " from soc where " + where + ";"
+		query = "select " + what + " from " + tableName + " where " + where + ";"
 	}
 
 	con, err := sql.Open("mysql", sqlString)
