@@ -7,6 +7,7 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"net/http"
 	"net/url"
+	"math"
 )
 
 var tableName string = "data"
@@ -14,6 +15,9 @@ var tableName string = "data"
 var sqlString string = "root:root@/soc"
 
 func handler(w http.ResponseWriter, r *http.Request) {
+
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+
 	queries := parseUrl(r)
 	where := generateWhere(queries)
 
@@ -40,10 +44,10 @@ func handler(w http.ResponseWriter, r *http.Request) {
 			CurrentFemale:   numberOf(where+optionalAnd+"gender = 'Z'"),
 		},
 		Stats: Stats{
-			AverageGrade:        average(gradeType, where),
-			ExcusableAbsence:    tempExcusableAbsence,
-			InexcusableAbsence:  tempInexcusableAbsence,
-			AverageAbsence:      tempExcusableAbsence + tempInexcusableAbsence,
+			AverageGrade:        RoundOn(average(gradeType, where), 2),
+			ExcusableAbsence:    RoundOn(tempExcusableAbsence, 2),
+			InexcusableAbsence:  RoundOn(tempInexcusableAbsence, 2),
+			AverageAbsence:      RoundOn(tempExcusableAbsence + tempInexcusableAbsence, 2),
 			ExcusableStudents:   numberOf(where+optionalAnd+"excusable != 0"),
 			InexcusableStudents: numberOf(where+optionalAnd+"inexcusable != 0"),
 		},
@@ -62,25 +66,25 @@ func generateWhere(queries map[string][]string) string {
 		if where != "" {
 			where += " and "
 		}
-		where += "class != 1"
+		where += "grade != 1"
 	}
 	if queries["grade2"] != nil && queries["grade2"][0] == "false" {
 		if where != "" {
 			where += " and "
 		}
-		where += "class != 2"
+		where += "grade != 2"
 	}
 	if queries["grade3"] != nil && queries["grade3"][0] == "false" {
 		if where != "" {
 			where += " and "
 		}
-		where += "class != 3"
+		where += "grade != 3"
 	}
 	if queries["grade4"] != nil && queries["grade4"][0] == "false" {
 		if where != "" {
 			where += " and "
 		}
-		where += "class != 4"
+		where += "grade != 4"
 	}
 
 	//for classes (A, B, C, D, E, F) - default is true
@@ -176,6 +180,15 @@ func average(what, where string) float64 {
 	}
 
 	return float64(sum) / float64(i)
+}
+
+func Round(f float64) float64 {
+    return math.Floor(f + .5)
+}
+
+func RoundOn(f float64, places int) (float64) {
+    shift := math.Pow(10, float64(places))
+    return Round(f * shift) / shift;    
 }
 
 func check(err error) {
