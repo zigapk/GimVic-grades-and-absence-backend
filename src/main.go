@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"math"
+	"sort"
 )
 
 var tableName string = "data"
@@ -77,36 +78,30 @@ func dataHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func yearsHandler(w http.ResponseWriter, r *http.Request) {
-
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 
-	//count different years that appear in table
-	var query string = "select distinct year from " + tableName + ";"
-
-	con, err := sql.Open("mysql", sqlString)
-	check(err)
-	defer con.Close()
-
-	rows, err := con.Query(query)
-	check(err)
-
-	var comma bool = false
+	years := differentYears()
 	var result string = ""
-
-	for rows.Next() {
-		var temp string
-		rows.Scan(&temp)
-		if comma {result += ","}
-		comma=true
-		result += temp
+	for i, year := range years {
+		if i!=0 {result += ","}
+		result += year
 	}
-
 	fmt.Fprint(w, result)
 }
 
 func generateWhere(queries map[string][]string) string {
-	//years not included yet
 	var where string = ""
+
+	//for years
+	years := differentYears()
+	for _, year := range years {
+		if queries[year] != nil && queries[year][0] == "false" {
+		if where != "" {
+			where += " and "
+		}
+		where += "year != '" + year + "'"
+	}
+	}
 
 	//for grades (1., 2., 3., 4. grade) - default is true
 	if queries["grade1"] != nil && queries["grade1"][0] == "false" {
@@ -158,6 +153,27 @@ func generateWhere(queries map[string][]string) string {
 	return where
 }
 
+func differentYears() []string{
+	//count different years that appear in table
+	var query string = "select distinct year from " + tableName + ";"
+
+	con, err := sql.Open("mysql", sqlString)
+	check(err)
+	defer con.Close()
+
+	rows, err := con.Query(query)
+	check(err)
+
+	var result []string
+
+	for rows.Next() {
+		var temp string
+		rows.Scan(&temp)
+		result = append(result, temp)
+	}
+	sort.Strings(result)
+	return result
+}
 func parseUrl(r *http.Request) map[string][]string {
 	str := r.URL.String()
 	u, err := url.Parse(str)
@@ -176,7 +192,7 @@ func numberOf(where string) int {
 	}
 
 	//debug
-	fmt.Println("EXECUTING: " + query)
+	//fmt.Println("EXECUTING: " + query)
 
 	con, err := sql.Open("mysql", sqlString)
 	check(err)
@@ -218,7 +234,7 @@ func average(what, where string) float64 {
 	}
 
 	if i == 0 {
-		return -1
+		return 0
 	}
 
 	return float64(sum) / float64(i)
