@@ -31,13 +31,17 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		optionalAnd = " and "
 	}
 
+	//temp variables
 	var tempExcusableAbsence float64 = average("excusable", where)
 	var tempInexcusableAbsence float64 = average("inexcusable", where)
+	var tempExcusableStudents int = numberOf(where+optionalAnd+"excusable != 0")
+	var tempInexcusableStudents int = numberOf(where+optionalAnd+"inexcusable != 0")
+	var tempCurrentStudents int = numberOf(where)
 
 	response := &Response{
 		Facts: Facts{
 			AllStudents:     numberOf(""),
-			CurrentStudents: numberOf(where),
+			CurrentStudents: tempCurrentStudents,
 			AllMale:         numberOf("gender = 'M'"),
 			CurrentMale:     numberOf(where+optionalAnd+"gender = 'M'"),
 			AllFemale:       numberOf("gender = 'Z'"),
@@ -48,8 +52,10 @@ func handler(w http.ResponseWriter, r *http.Request) {
 			ExcusableAbsence:    RoundOn(tempExcusableAbsence, 2),
 			InexcusableAbsence:  RoundOn(tempInexcusableAbsence, 2),
 			AverageAbsence:      RoundOn(tempExcusableAbsence + tempInexcusableAbsence, 2),
-			ExcusableStudents:   numberOf(where+optionalAnd+"excusable != 0"),
-			InexcusableStudents: numberOf(where+optionalAnd+"inexcusable != 0"),
+			ExcusableStudents:   tempExcusableStudents,
+			InexcusableStudents: tempInexcusableStudents,
+			ExcusableStudentsPercent: RoundOn(float64(tempExcusableStudents)/float64(tempCurrentStudents)*100, 2),
+			InexcusableStudentsPercent: RoundOn(float64(tempInexcusableStudents)/float64(tempCurrentStudents)*100, 2),
 		},
 	}
 	responseStr, err := json.Marshal(response)
@@ -218,4 +224,6 @@ type Stats struct {
 	InexcusableAbsence  float64
 	ExcusableStudents   int
 	InexcusableStudents int
+	ExcusableStudentsPercent float64
+	InexcusableStudentsPercent float64
 }
