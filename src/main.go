@@ -5,10 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
+	"math"
 	"net/http"
 	"net/url"
-	"math"
 	"sort"
+	"strconv"
 )
 
 var tableName string = "data"
@@ -19,6 +20,7 @@ var precision int = 1
 func main() {
 	http.HandleFunc("/data", dataHandler)
 	http.HandleFunc("/years", yearsHandler)
+	http.HandleFunc("/graph", graphHandler)
 	http.ListenAndServe(":8080", nil)
 }
 
@@ -42,14 +44,14 @@ func dataHandler(w http.ResponseWriter, r *http.Request) {
 	//temp variables
 	var tempExcusableAbsence float64 = average("excusable", where)
 	var tempInexcusableAbsence float64 = average("inexcusable", where)
-	var tempExcusableStudents int = numberOf(where+optionalAnd+"excusable != 0")
-	var tempInexcusableStudents int = numberOf(where+optionalAnd+"inexcusable != 0")
+	var tempExcusableStudents int = numberOf(where + optionalAnd + "excusable != 0")
+	var tempInexcusableStudents int = numberOf(where + optionalAnd + "inexcusable != 0")
 	var tempCurrentStudents int = numberOf(where)
 	var tempExcusableStudentsPercent float64 = 0
 	var tempInexcusableStudentsPercent float64 = 0
 	if tempCurrentStudents != 0 {
-		tempExcusableStudentsPercent = float64(tempExcusableStudents)/float64(tempCurrentStudents)*100
-		tempInexcusableStudentsPercent = float64(tempInexcusableStudents)/float64(tempCurrentStudents)*100
+		tempExcusableStudentsPercent = float64(tempExcusableStudents) / float64(tempCurrentStudents) * 100
+		tempInexcusableStudentsPercent = float64(tempInexcusableStudents) / float64(tempCurrentStudents) * 100
 	}
 
 	response := &DataResponse{
@@ -57,18 +59,18 @@ func dataHandler(w http.ResponseWriter, r *http.Request) {
 			AllStudents:     numberOf(""),
 			CurrentStudents: tempCurrentStudents,
 			AllMale:         numberOf("gender = 'M'"),
-			CurrentMale:     numberOf(where+optionalAnd+"gender = 'M'"),
+			CurrentMale:     numberOf(where + optionalAnd + "gender = 'M'"),
 			AllFemale:       numberOf("gender = 'Z'"),
-			CurrentFemale:   numberOf(where+optionalAnd+"gender = 'Z'"),
+			CurrentFemale:   numberOf(where + optionalAnd + "gender = 'Z'"),
 		},
 		Stats: Stats{
-			AverageGrade:        RoundOn(average(gradeType, where), precision),
-			ExcusableAbsence:    RoundOn(tempExcusableAbsence, precision),
-			InexcusableAbsence:  RoundOn(tempInexcusableAbsence, precision),
-			AverageAbsence:      RoundOn(tempExcusableAbsence + tempInexcusableAbsence, precision),
-			ExcusableStudents:   tempExcusableStudents,
-			InexcusableStudents: tempInexcusableStudents,
-			ExcusableStudentsPercent: RoundOn(tempExcusableStudentsPercent, precision),
+			AverageGrade:               RoundOn(average(gradeType, where), precision),
+			ExcusableAbsence:           RoundOn(tempExcusableAbsence, precision),
+			InexcusableAbsence:         RoundOn(tempInexcusableAbsence, precision),
+			AverageAbsence:             RoundOn(tempExcusableAbsence+tempInexcusableAbsence, precision),
+			ExcusableStudents:          tempExcusableStudents,
+			InexcusableStudents:        tempInexcusableStudents,
+			ExcusableStudentsPercent:   RoundOn(tempExcusableStudentsPercent, precision),
 			InexcusableStudentsPercent: RoundOn(tempInexcusableStudentsPercent, precision),
 		},
 	}
@@ -83,10 +85,38 @@ func yearsHandler(w http.ResponseWriter, r *http.Request) {
 	years := differentYears()
 	var result string = ""
 	for i, year := range years {
-		if i!=0 {result += ","}
+		if i != 0 {
+			result += ","
+		}
 		result += year
 	}
 	fmt.Fprint(w, result)
+}
+
+func graphHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+
+	data := getGraphData("excusable", "average", 0.1, 0.05, 51)
+
+	responseStr, err := json.Marshal(data)
+	check(err)
+	fmt.Fprint(w, string(responseStr))
+}
+
+func getGraphData(what, ranking string, step, diff float64, to int) [][2]float64 {
+	var result [][2]float64
+	for i := 0; i < to; i++ {
+		lower := float64(i)*step - diff
+		upper := float64(i)*step + diff
+		avg := average(what, ranking+" >= "+strconv.FormatFloat(lower, 'f', -1, 64)+" and "+ranking+" < "+strconv.FormatFloat(upper, 'f', -1, 64))
+		if avg != 0 {
+			temp := float64(float64(i) * step)
+			tempArray := [2]float64{temp, avg}
+			result = append(result, tempArray)
+		}
+	}
+
+	return result
 }
 
 func generateWhere(queries map[string][]string) string {
@@ -96,11 +126,11 @@ func generateWhere(queries map[string][]string) string {
 	years := differentYears()
 	for _, year := range years {
 		if queries[year] != nil && queries[year][0] == "false" {
-		if where != "" {
-			where += " and "
+			if where != "" {
+				where += " and "
+			}
+			where += "year != '" + year + "'"
 		}
-		where += "year != '" + year + "'"
-	}
 	}
 
 	//for grades (1., 2., 3., 4. grade) - default is true
@@ -153,7 +183,7 @@ func generateWhere(queries map[string][]string) string {
 	return where
 }
 
-func differentYears() []string{
+func differentYears() []string {
 	//count different years that appear in table
 	var query string = "select distinct year from " + tableName + ";"
 
@@ -241,12 +271,12 @@ func average(what, where string) float64 {
 }
 
 func Round(f float64) float64 {
-    return math.Floor(f + .5)
+	return math.Floor(f + .5)
 }
 
-func RoundOn(f float64, places int) (float64) {
-    shift := math.Pow(10, float64(places))
-    return Round(f * shift) / shift;    
+func RoundOn(f float64, places int) float64 {
+	shift := math.Pow(10, float64(places))
+	return Round(f*shift) / shift
 }
 
 func check(err error) {
@@ -270,13 +300,13 @@ type Facts struct {
 }
 
 type Stats struct {
-	AverageGrade        float64
-	AverageAbsence      float64
-	ExcusableAbsence    float64
-	InexcusableAbsence  float64
-	ExcusableStudents   int
-	InexcusableStudents int
-	ExcusableStudentsPercent float64
+	AverageGrade               float64
+	AverageAbsence             float64
+	ExcusableAbsence           float64
+	InexcusableAbsence         float64
+	ExcusableStudents          int
+	InexcusableStudents        int
+	ExcusableStudentsPercent   float64
 	InexcusableStudentsPercent float64
 }
 
