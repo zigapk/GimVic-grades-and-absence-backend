@@ -15,6 +15,12 @@ var sqlString string = "root:root@/soc"
 
 var precision int = 1
 
+func main() {
+	http.HandleFunc("/data", dataHandler)
+	http.HandleFunc("/years", yearsHandler)
+	http.ListenAndServe(":8080", nil)
+}
+
 func dataHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Access-Control-Allow-Origin", "*")
@@ -38,6 +44,12 @@ func dataHandler(w http.ResponseWriter, r *http.Request) {
 	var tempExcusableStudents int = numberOf(where+optionalAnd+"excusable != 0")
 	var tempInexcusableStudents int = numberOf(where+optionalAnd+"inexcusable != 0")
 	var tempCurrentStudents int = numberOf(where)
+	var tempExcusableStudentsPercent float64 = 0
+	var tempInexcusableStudentsPercent float64 = 0
+	if tempCurrentStudents != 0 {
+		tempExcusableStudentsPercent = float64(tempExcusableStudents)/float64(tempCurrentStudents)*100
+		tempInexcusableStudentsPercent = float64(tempInexcusableStudents)/float64(tempCurrentStudents)*100
+	}
 
 	response := &DataResponse{
 		Facts: Facts{
@@ -55,8 +67,8 @@ func dataHandler(w http.ResponseWriter, r *http.Request) {
 			AverageAbsence:      RoundOn(tempExcusableAbsence + tempInexcusableAbsence, precision),
 			ExcusableStudents:   tempExcusableStudents,
 			InexcusableStudents: tempInexcusableStudents,
-			ExcusableStudentsPercent: RoundOn(float64(tempExcusableStudents)/float64(tempCurrentStudents)*100, precision),
-			InexcusableStudentsPercent: RoundOn(float64(tempInexcusableStudents)/float64(tempCurrentStudents)*100, precision),
+			ExcusableStudentsPercent: RoundOn(tempExcusableStudentsPercent, precision),
+			InexcusableStudentsPercent: RoundOn(tempInexcusableStudentsPercent, precision),
 		},
 	}
 	responseStr, err := json.Marshal(response)
@@ -78,21 +90,18 @@ func yearsHandler(w http.ResponseWriter, r *http.Request) {
 	rows, err := con.Query(query)
 	check(err)
 
-	var array []string
+	var comma bool = false
+	var result string = ""
 
 	for rows.Next() {
 		var temp string
 		rows.Scan(&temp)
-		array = append(array, temp)
+		if comma {result += ","}
+		comma=true
+		result += temp
 	}
 
-	response := &YearsResponse{
-		Years: array,
-	}
-
-	responseStr, err := json.Marshal(response)
-	check(err)
-	fmt.Fprint(w, string(responseStr))
+	fmt.Fprint(w, result)
 }
 
 func generateWhere(queries map[string][]string) string {
@@ -156,12 +165,6 @@ func parseUrl(r *http.Request) map[string][]string {
 	m, err := url.ParseQuery(u.RawQuery)
 	check(err)
 	return m
-}
-
-func main() {
-	http.HandleFunc("/data", dataHandler)
-	http.HandleFunc("/years", yearsHandler)
-	http.ListenAndServe(":8080", nil)
 }
 
 func numberOf(where string) int {
