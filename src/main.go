@@ -11,8 +11,9 @@ import (
 )
 
 var tableName string = "data"
-
 var sqlString string = "root:root@/soc"
+
+var precision int = 1
 
 func handler(w http.ResponseWriter, r *http.Request) {
 
@@ -48,14 +49,14 @@ func handler(w http.ResponseWriter, r *http.Request) {
 			CurrentFemale:   numberOf(where+optionalAnd+"gender = 'Z'"),
 		},
 		Stats: Stats{
-			AverageGrade:        RoundOn(average(gradeType, where), 2),
-			ExcusableAbsence:    RoundOn(tempExcusableAbsence, 2),
-			InexcusableAbsence:  RoundOn(tempInexcusableAbsence, 2),
-			AverageAbsence:      RoundOn(tempExcusableAbsence + tempInexcusableAbsence, 2),
+			AverageGrade:        RoundOn(average(gradeType, where), precision),
+			ExcusableAbsence:    RoundOn(tempExcusableAbsence, precision),
+			InexcusableAbsence:  RoundOn(tempInexcusableAbsence, precision),
+			AverageAbsence:      RoundOn(tempExcusableAbsence + tempInexcusableAbsence, precision),
 			ExcusableStudents:   tempExcusableStudents,
 			InexcusableStudents: tempInexcusableStudents,
-			ExcusableStudentsPercent: RoundOn(float64(tempExcusableStudents)/float64(tempCurrentStudents)*100, 2),
-			InexcusableStudentsPercent: RoundOn(float64(tempInexcusableStudents)/float64(tempCurrentStudents)*100, 2),
+			ExcusableStudentsPercent: RoundOn(float64(tempExcusableStudents)/float64(tempCurrentStudents)*100, precision),
+			InexcusableStudentsPercent: RoundOn(float64(tempInexcusableStudents)/float64(tempCurrentStudents)*100, precision),
 		},
 	}
 	responseStr, err := json.Marshal(response)
