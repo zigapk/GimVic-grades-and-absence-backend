@@ -15,7 +15,7 @@ var sqlString string = "root:root@/soc"
 
 var precision int = 1
 
-func handler(w http.ResponseWriter, r *http.Request) {
+func dataHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 
@@ -39,7 +39,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	var tempInexcusableStudents int = numberOf(where+optionalAnd+"inexcusable != 0")
 	var tempCurrentStudents int = numberOf(where)
 
-	response := &Response{
+	response := &DataResponse{
 		Facts: Facts{
 			AllStudents:     numberOf(""),
 			CurrentStudents: tempCurrentStudents,
@@ -59,6 +59,37 @@ func handler(w http.ResponseWriter, r *http.Request) {
 			InexcusableStudentsPercent: RoundOn(float64(tempInexcusableStudents)/float64(tempCurrentStudents)*100, precision),
 		},
 	}
+	responseStr, err := json.Marshal(response)
+	check(err)
+	fmt.Fprint(w, string(responseStr))
+}
+
+func yearsHandler(w http.ResponseWriter, r *http.Request) {
+
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+
+	//count different years that appear in table
+	var query string = "select distinct year from " + tableName + ";"
+
+	con, err := sql.Open("mysql", sqlString)
+	check(err)
+	defer con.Close()
+
+	rows, err := con.Query(query)
+	check(err)
+
+	var array []string
+
+	for rows.Next() {
+		var temp string
+		rows.Scan(&temp)
+		array = append(array, temp)
+	}
+
+	response := &YearsResponse{
+		Years: array,
+	}
+
 	responseStr, err := json.Marshal(response)
 	check(err)
 	fmt.Fprint(w, string(responseStr))
@@ -128,7 +159,8 @@ func parseUrl(r *http.Request) map[string][]string {
 }
 
 func main() {
-	http.HandleFunc("/", handler)
+	http.HandleFunc("/data", dataHandler)
+	http.HandleFunc("/years", yearsHandler)
 	http.ListenAndServe(":8080", nil)
 }
 
@@ -204,7 +236,7 @@ func check(err error) {
 	}
 }
 
-type Response struct {
+type DataResponse struct {
 	Facts Facts
 	Stats Stats
 }
@@ -227,4 +259,8 @@ type Stats struct {
 	InexcusableStudents int
 	ExcusableStudentsPercent float64
 	InexcusableStudentsPercent float64
+}
+
+type YearsResponse struct {
+	Years []string
 }
