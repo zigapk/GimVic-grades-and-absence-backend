@@ -95,28 +95,72 @@ func yearsHandler(w http.ResponseWriter, r *http.Request) {
 
 func graphHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
+	//data := getGraphData("excusable", "average", 0.1, 0.05, 51)
 
-	data := getGraphData("excusable", "average", 0.1, 0.05, 51)
+	queries := parseUrl(r)
+	where := generateWhere(queries)
 
-	responseStr, err := json.Marshal(data)
-	check(err)
-	fmt.Fprint(w, string(responseStr))
+	var gradeType string = "average"
+	if queries["gradeType"] != nil {
+		gradeType = queries["gradeType"][0]
+	}
+
+	var absenceType string = "excusable"
+	if queries["absenceType"] != nil {
+		absenceType = queries["absenceType"][0]
+	}
+
+	var labels [3]string
+	if gradeType == "final" {
+		labels[0] = "Končni uspeh"
+	}else {
+		labels[0] = "Povprečna ocena"
+	}
+	if absenceType == "inexcusable" {
+		labels[1] = "Št. neopravičenih ur v izbranem vzorcu"
+		labels[2] = "Št. neopravičenih ur na celi šoli"
+	}else {
+		labels[1] = "Št. opravičenih ur v izbranem vzorcu"
+		labels[2] = "Št. opravičenih ur na celi šoli"
+	}
+
+	result := getGraphJson(absenceType, gradeType, where, 1, 0.5, 6, labels)
+	fmt.Fprint(w, result)
 }
 
-func getGraphData(what, ranking string, step, diff float64, to int) [][2]float64 {
-	var result [][2]float64
+func getGraphJson(what, ranking, where string, step, diff float64, to int, labels [3]string) string {
+	var optionalAnd string = ""
+	if where != "" {
+		optionalAnd = " and "
+	}
+
+	result := &GraphResponse{}
+	result.Cols = append(result.Cols, Col{Type: "number", Label: labels[0]})
+	result.Cols = append(result.Cols, Col{Type: "number", Label: labels[1]})
+	result.Cols = append(result.Cols, Col{Type: "number", Label: labels[2]})
+
 	for i := 0; i < to; i++ {
 		lower := float64(i)*step - diff
 		upper := float64(i)*step + diff
-		avg := average(what, ranking+" >= "+strconv.FormatFloat(lower, 'f', -1, 64)+" and "+ranking+" < "+strconv.FormatFloat(upper, 'f', -1, 64))
-		if avg != 0 {
-			temp := float64(float64(i) * step)
-			tempArray := [2]float64{temp, avg}
-			result = append(result, tempArray)
+		avgCurrent := average(what, ranking+" >= "+strconv.FormatFloat(lower, 'f', -1, 64)+" and "+ranking+" < "+strconv.FormatFloat(upper, 'f', -1, 64)+optionalAnd+where)
+		avgAll := average(what, ranking+" >= "+strconv.FormatFloat(lower, 'f', -1, 64)+" and "+ranking+" < "+strconv.FormatFloat(upper, 'f', -1, 64))
+		
+		base := float64(float64(i) * step)
+		var finalCurrent interface{} = nil
+		if avgCurrent != 0 {
+			finalCurrent = avgCurrent
 		}
+		var finalAll interface{} = nil
+		if avgAll != 0 {
+			finalAll = avgAll
+		}
+
+		result.Rows = append(result.Rows, Row{VStructs: []VStruct{VStruct{Value: base}, VStruct{Value: finalCurrent}, VStruct{Value: finalAll}}})
 	}
 
-	return result
+	responseStr, err := json.Marshal(result)
+	check(err)
+	return string(responseStr)
 }
 
 func generateWhere(queries map[string][]string) string {
@@ -246,6 +290,9 @@ func average(what, where string) float64 {
 		query = "select " + what + " from " + tableName + " where " + where + ";"
 	}
 
+	//debug
+	//fmt.Println("EXECUTING: " + query)
+
 	con, err := sql.Open("mysql", sqlString)
 	check(err)
 	defer con.Close()
@@ -285,6 +332,7 @@ func check(err error) {
 	}
 }
 
+
 type DataResponse struct {
 	Facts Facts
 	Stats Stats
@@ -312,4 +360,23 @@ type Stats struct {
 
 type YearsResponse struct {
 	Years []string
+}
+
+type GraphResponse struct {
+	Cols []Col "json:\"cols\""
+	Rows []Row "json:\"rows\""
+}
+
+type Col struct {
+	Id string "json:\"id\""
+	Label string "json:\"label\""
+	Type string "json:\"type\""
+}
+
+type Row struct {
+	VStructs []VStruct "json:\"c\""
+}
+
+type VStruct struct {
+	Value interface{} "json:\"v\""
 }
