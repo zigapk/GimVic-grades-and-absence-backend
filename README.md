@@ -2,13 +2,13 @@ GimVic - grades and absence
 ===========================
 Backend for Gimnazija Vič's grades and absence statistics.
 
-Note: a MySQL database is needed. It's format must be exacly the same as shown in backup.sql file. 
+Note: a MySQL database is required. It's format must be exacly the same as shown in backup.sql file. 
 
 Usage:
 -------
 1. compile it yourself using `go build` command (you may need to install some dependencies using `go get`)
 2. run it - by default it listens on port 8080 (can be modified in main.go file)
-3. navigate to some of following urls:
+3. navigate to any of following urls:
 
 <table>
   <tr>
