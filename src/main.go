@@ -142,8 +142,8 @@ func getGraphJson(what, ranking, where string, step, diff float64, to int, label
 	for i := 0; i < to; i++ {
 		lower := float64(i)*step - diff
 		upper := float64(i)*step + diff
-		avgCurrent := average(what, ranking+" >= "+strconv.FormatFloat(lower, 'f', -1, 64)+" and "+ranking+" < "+strconv.FormatFloat(upper, 'f', -1, 64)+optionalAnd+where)
-		avgAll := average(what, ranking+" >= "+strconv.FormatFloat(lower, 'f', -1, 64)+" and "+ranking+" < "+strconv.FormatFloat(upper, 'f', -1, 64))
+		avgCurrent := RoundOn(average(what, ranking+" >= "+strconv.FormatFloat(lower, 'f', -1, 64)+" and "+ranking+" < "+strconv.FormatFloat(upper, 'f', -1, 64)+optionalAnd+where), 2)
+		avgAll := RoundOn(average(what, ranking+" >= "+strconv.FormatFloat(lower, 'f', -1, 64)+" and "+ranking+" < "+strconv.FormatFloat(upper, 'f', -1, 64)), 2)
 		
 		base := float64(float64(i) * step)
 		var finalCurrent interface{} = nil
