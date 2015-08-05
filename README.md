@@ -6,8 +6,8 @@ Note: a MySQL database is required. It's format must be exacly the same as shown
 
 Usage:
 -------
-1. compile it yourself using `go build` command (you may need to install some dependencies using `go get`)
-2. run it - by default it listens on port 8080 (can be modified in main.go file)
+1. download one of releases or compile source code yourself using `go build` command (you may need to install some dependencies using `go get`)
+2. run it: add `-p=some-port` to declare port to listen to, and `-sql=MySQL-credidentials` to specify username, password and database in Go format like this: `root:root@/data` 
 3. navigate to any of following urls:
 
 <table>
