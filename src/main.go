@@ -113,13 +113,13 @@ func graphHandler(w http.ResponseWriter, r *http.Request) {
 	var labels [3]string
 	if gradeType == "final" {
 		labels[0] = "Končni uspeh"
-	}else {
+	} else {
 		labels[0] = "Povprečna ocena"
 	}
 	if absenceType == "inexcusable" {
 		labels[1] = "Št. neopravičenih ur v izbranem vzorcu"
 		labels[2] = "Št. neopravičenih ur na celi šoli"
-	}else {
+	} else {
 		labels[1] = "Št. opravičenih ur v izbranem vzorcu"
 		labels[2] = "Št. opravičenih ur na celi šoli"
 	}
@@ -144,7 +144,7 @@ func getGraphJson(what, ranking, where string, step, diff float64, to int, label
 		upper := float64(i)*step + diff
 		avgCurrent := RoundOn(average(what, ranking+" >= "+strconv.FormatFloat(lower, 'f', -1, 64)+" and "+ranking+" < "+strconv.FormatFloat(upper, 'f', -1, 64)+optionalAnd+where), 2)
 		avgAll := RoundOn(average(what, ranking+" >= "+strconv.FormatFloat(lower, 'f', -1, 64)+" and "+ranking+" < "+strconv.FormatFloat(upper, 'f', -1, 64)), 2)
-		
+
 		base := float64(float64(i) * step)
 		var finalCurrent interface{} = nil
 		if avgCurrent != 0 {
@@ -332,7 +332,6 @@ func check(err error) {
 	}
 }
 
-
 type DataResponse struct {
 	Facts Facts
 	Stats Stats
@@ -368,9 +367,9 @@ type GraphResponse struct {
 }
 
 type Col struct {
-	Id string "json:\"id\""
+	Id    string "json:\"id\""
 	Label string "json:\"label\""
-	Type string "json:\"type\""
+	Type  string "json:\"type\""
 }
 
 type Row struct {
