@@ -214,28 +214,40 @@ func generateWhere(queries map[string][]string) string {
 	}
 
 	//for classes (A, B, C, D, E, F) - default is true
-	if queries["classA"] != nil && queries["classA"][0] == "false"{
-		if where != "" {where += " and "}
+	if queries["classA"] != nil && queries["classA"][0] == "false" {
+		if where != "" {
+			where += " and "
+		}
 		where += "class != 'A'"
 	}
-	if queries["classB"] != nil && queries["classB"][0] == "false"{
-		if where != "" {where += " and "}
+	if queries["classB"] != nil && queries["classB"][0] == "false" {
+		if where != "" {
+			where += " and "
+		}
 		where += "class != 'B'"
 	}
-	if queries["classC"] != nil && queries["classC"][0] == "false"{
-		if where != "" {where += " and "}
+	if queries["classC"] != nil && queries["classC"][0] == "false" {
+		if where != "" {
+			where += " and "
+		}
 		where += "class != 'C'"
 	}
-	if queries["classD"] != nil && queries["classD"][0] == "false"{
-		if where != "" {where += " and "}
+	if queries["classD"] != nil && queries["classD"][0] == "false" {
+		if where != "" {
+			where += " and "
+		}
 		where += "class != 'D'"
 	}
-	if queries["classE"] != nil && queries["classE"][0] == "false"{
-		if where != "" {where += " and "}
+	if queries["classE"] != nil && queries["classE"][0] == "false" {
+		if where != "" {
+			where += " and "
+		}
 		where += "class != 'E'"
 	}
-	if queries["classF"] != nil && queries["classF"][0] == "false"{
-		if where != "" {where += " and "}
+	if queries["classF"] != nil && queries["classF"][0] == "false" {
+		if where != "" {
+			where += " and "
+		}
 		where += "class != 'F'"
 	}
 
