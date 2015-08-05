@@ -22,7 +22,7 @@ var precision int = 1
 
 func main() {
 
-	sqlFlag := flag.String("sql", "root:root@/data", "MySQL credidential in Go database format")
+	sqlFlag := flag.String("sql", "root:root@/soc", "MySQL credidential in Go database format")
 	portFlag := flag.Int("p", 8080, "Port to listen to")
 	flag.Parse()
 
@@ -214,11 +214,30 @@ func generateWhere(queries map[string][]string) string {
 	}
 
 	//for classes (A, B, C, D, E, F) - default is true
-	/* SQL data not ready yet!
 	if queries["classA"] != nil && queries["classA"][0] == "false"{
 		if where != "" {where += " and "}
-		where += "class != 1"
-	}*/
+		where += "class != 'A'"
+	}
+	if queries["classB"] != nil && queries["classB"][0] == "false"{
+		if where != "" {where += " and "}
+		where += "class != 'B'"
+	}
+	if queries["classC"] != nil && queries["classC"][0] == "false"{
+		if where != "" {where += " and "}
+		where += "class != 'C'"
+	}
+	if queries["classD"] != nil && queries["classD"][0] == "false"{
+		if where != "" {where += " and "}
+		where += "class != 'D'"
+	}
+	if queries["classE"] != nil && queries["classE"][0] == "false"{
+		if where != "" {where += " and "}
+		where += "class != 'E'"
+	}
+	if queries["classF"] != nil && queries["classF"][0] == "false"{
+		if where != "" {where += " and "}
+		where += "class != 'F'"
+	}
 
 	//for gender (male, female) - default is true
 	if queries["male"] != nil && queries["male"][0] == "false" {
