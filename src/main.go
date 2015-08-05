@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"encoding/json"
+	"flag"
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
 	"math"
@@ -13,15 +14,24 @@ import (
 )
 
 var tableName string = "data"
-var sqlString string = "root:root@/soc"
+
+//since 0.2 provided through sql flag
+var sqlString string
 
 var precision int = 1
 
 func main() {
+
+	sqlFlag := flag.String("sql", "root:root@/data", "MySQL credidential in Go database format")
+	portFlag := flag.Int("p", 8080, "Port to listen to")
+	flag.Parse()
+
+	sqlString = *sqlFlag
+
 	http.HandleFunc("/data", dataHandler)
 	http.HandleFunc("/years", yearsHandler)
 	http.HandleFunc("/graph", graphHandler)
-	http.ListenAndServe(":8080", nil)
+	http.ListenAndServe(":"+strconv.Itoa(*portFlag), nil)
 }
 
 func dataHandler(w http.ResponseWriter, r *http.Request) {
